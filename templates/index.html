@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Viewer</title>
+    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+    <style>
+        .mol-container {
+            width: 100%;
+            height: 600px;
+            position: relative;
+        }
+        .protein-info {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+
+<h1>Protein Viewer</h1>
+<div id="container-01" class="mol-container"></div>
+
+<div class="protein-info">
+    <h2 id="protein-name">Protein Name: Loading...</h2>
+    <p id="protein-summary">Protein Summary: Loading...</p>
+</div>
+
+<script>
+    // Function to fetch and display the protein structure
+    function showStructureAndImage(modelUrl, color = "lDDT") {
+        // Create a 3Dmol.js view
+        let element = document.querySelector('#container-01');
+        let config = { backgroundColor: 'white' };
+        let viewer = $3Dmol.createViewer(element, config );
+    
+        // Fetch the model data from the URL
+        fetch(modelUrl)
+            .then(response => {
+                console.log("Fetched model URL:", modelUrl);  // Log the URL
+                return response.text();
+            })
+            .then(modelData => {
+                console.log("Model data received:", modelData);  // Log the model data
+                
+                // Add the model to the viewer (assuming the format is CIF)
+                viewer.addModel(modelData, "cif");  // Or "pdb", depending on your model's format
+    
+                // Set style based on color parameter
+                if (color === "lDDT") {
+                    viewer.setStyle(
+                        { 
+                            cartoon: { 
+                                colorscheme: { 
+                                    prop: "b", 
+                                    gradient: "roygb", 
+                                    min: 50, 
+                                    max: 90 
+                                }
+                            }
+                        }
+                    );
+                } else if (color === "rainbow") {
+                    viewer.setStyle(
+                        { cartoon: { color: "spectrum" } }
+                    );
+                }
+    
+                // Zoom to the structure
+                viewer.zoomTo();
+    
+                // Render the 3D structure
+                viewer.render();
+            })
+            .catch(error => {
+                console.error("Error displaying structure:", error);
+            });
+    }
+
+    // Function to fetch protein data from your API
+    function fetchProteinData(uniprot_accession) {
+        fetch(`/api/protein/${uniprot_accession}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log("Fetched protein data:", data);  // Log the API response
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Display protein name and summary
+                    document.getElementById('protein-name').textContent = `Protein Name: ${data.protein_name}`;
+                    document.getElementById('protein-summary').textContent = `Protein Summary: ${data.protein_summary}`;
+
+                    // Fetch and display the protein structure using the model URL
+                    const color = "lDDT";  // or "rainbow" depending on your desired color scheme
+                    showStructureAndImage(data.model_url, color);
+                }
+            })
+            .catch(error => console.error('Error fetching protein data:', error));
+    }
+
+    // Example UniProt accession to visualize
+    const uniprot_accession = "Q9Q908";  // Replace with the desired UniProt accession
+    fetchProteinData(uniprot_accession);
+</script>
+
+</body>
+</html>
